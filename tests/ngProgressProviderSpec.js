@@ -78,7 +78,7 @@ describe('How the provider should work', function() {
     this.progressbar.setColor('green');
     expect(this.progressbar.color).toBe('green');
   });
-  it('stops at it\'s current progress when calling sotp()', function() {
+  it('stops at it\'s current progress when calling stop()', function() {
     // var value, flag;
     this.progressbar.start();
 

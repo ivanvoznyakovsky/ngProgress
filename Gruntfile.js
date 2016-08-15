@@ -9,7 +9,7 @@ module.exports = function (grunt) {
                 runnerPort: 9876,
                 singleRun: true,
                 reporters: ['progress'],
-                browsers: ['PhantomJS']
+                browsers: ['Firefox']
             }
         },
         concat: {

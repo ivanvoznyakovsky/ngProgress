@@ -35,26 +35,39 @@ angular.module('ngProgress.provider', ['ngProgress.directive'])
       // The ID for the interval controlling start()
       this.intervalCounterId = 0;
 
+      this.runUpdateCountLoop = function(timestamp) {
+        if (!timestamp) { // first call not from requestAnimationFrame
+          $window.cancelAnimationFrame(this.intervalCounterId);
+          this.intervalCounterId = $window.requestAnimationFrame(this.runUpdateCountLoop.bind(this));
+          return;
+        }
+
+        if (isNaN(this.count)) {
+          $window.cancelAnimationFrame(this.intervalCounterId);
+          this.count = 0;
+          this.hide();
+        } else {
+          if (!this.startUpdateTime) {
+            this.startUpdateTime = timestamp;
+          }
+
+          if (timestamp - this.startUpdateTime >= this.updateCountInterval) {
+            this.startUpdateTime = timestamp;
+            this.remaining = 100 - this.count;
+            this.count += this.updateCountRate * Math.pow(1 - Math.sqrt(this.remaining), 2);
+            this.updateCount(this.count);
+          }
+
+          this.intervalCounterId = $window.requestAnimationFrame(this.runUpdateCountLoop.bind(this));
+        }
+      };
+
       // Starts the animation and adds between 0 - 5 percent to loading
       // each 400 milliseconds. Should always be finished with progressbar.complete()
       // to hide it
       this.start = function() {
-        // TODO Use requestAnimationFrame instead of setInterval
-        // https://developer.mozilla.org/en-US/docs/Web/API/window.requestAnimationFrame
         this.show();
-        var self = this;
-        clearInterval(this.intervalCounterId);
-        this.intervalCounterId = setInterval(function() {
-          if (isNaN(self.count)) {
-            clearInterval(self.intervalCounterId);
-            self.count = 0;
-            self.hide();
-          } else {
-            self.remaining = 100 - self.count;
-            self.count = self.count + (self.updateCountRate * Math.pow(1 - Math.sqrt(self.remaining), 2));
-            self.updateCount(self.count);
-          }
-        }, this.updateCountInterval);
+        this.runUpdateCountLoop();
       };
 
       this.updateCount = function(new_count) {
@@ -134,7 +147,7 @@ angular.module('ngProgress.provider', ['ngProgress.directive'])
 
       // Stops the progressbar at it's current location
       this.stop = function() {
-        clearInterval(this.intervalCounterId);
+        $window.cancelAnimationFrame(this.intervalCounterId);
       };
 
       // Set's the progressbar percentage. Use a number between 0 - 100.
@@ -143,7 +156,7 @@ angular.module('ngProgress.provider', ['ngProgress.directive'])
         this.show();
         this.updateCount(new_count);
         this.count = new_count;
-        clearInterval(this.intervalCounterId);
+        $window.cancelAnimationFrame(this.intervalCounterId);
         return this.count;
       };
 
@@ -154,7 +167,7 @@ angular.module('ngProgress.provider', ['ngProgress.directive'])
       // Resets the progressbar to percetage 0 and therefore will be hided after
       // it's rollbacked
       this.reset = function() {
-        clearInterval(this.intervalCounterId);
+        $window.cancelAnimationFrame(this.intervalCounterId);
         this.count = 0;
         this.updateCount(this.count);
         return 0;
@@ -165,7 +178,7 @@ angular.module('ngProgress.provider', ['ngProgress.directive'])
         this.count = 100;
         this.updateCount(this.count);
         var self = this;
-        clearInterval(this.intervalCounterId);
+        $window.cancelAnimationFrame(this.intervalCounterId);
         $timeout(function() {
           self.hide();
           $timeout(function() {
